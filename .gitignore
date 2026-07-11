@@ -1,0 +1,22 @@
+# Dependencies
+**/node_modules/
+
+# Environment
+**/.env
+!**/.env.example
+
+# Logs
+*.log
+
+
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Google Service Account
+server/service-account.json
