@@ -1,4 +1,4 @@
-import { Activity, Banknote, CircleDollarSign, Landmark, Users, Wallet } from 'lucide-react';
+import { Activity, Banknote, CalendarCheck, CircleDollarSign, Landmark, TrendingUp, Users, Wallet } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
@@ -29,6 +29,34 @@ export default function Dashboard() {
         <StatCard label="Total Received" value={data.totalReceived} formatter={money} icon={CircleDollarSign} accent="green" />
         <StatCard label="Active Loans" value={data.activeLoans} icon={Wallet} formatter={(v) => Math.round(v)} />
         <StatCard label="Total Borrowers" value={data.totalBorrowers} icon={Users} formatter={(v) => Math.round(v)} />
+        <StatCard label="Today's Collection" value={data.todayCollection} formatter={money} icon={CalendarCheck} accent="green" />
+        <StatCard label="This Month Collection" value={data.monthCollection} formatter={money} icon={TrendingUp} accent="green" />
+        <StatCard label="Total Liquid" value={data.familyHoldings?.totalLiquid} formatter={money} icon={Wallet} accent="slate" />
+        <StatCard label="Net Worth" value={data.netWorth} formatter={money} icon={Landmark} accent="blue" />
+      </div>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="card p-5">
+          <h2 className="text-sm font-bold uppercase text-slate-500">Family Holdings</h2>
+          <div className="mt-4 space-y-3 text-sm">
+            <div className="flex justify-between"><span>Cash in Hand</span><strong>{money(data.familyHoldings?.cashInHand)}</strong></div>
+            <div className="flex justify-between"><span>Money with Mummy</span><strong>{money(data.familyHoldings?.moneyWithMummy)}</strong></div>
+            <div className="flex justify-between"><span>Money with Papa</span><strong>{money(data.familyHoldings?.moneyWithPapa)}</strong></div>
+            <div className="border-t border-slate-200 pt-3 dark:border-slate-800 flex justify-between"><span>Total Liquid</span><strong>{money(data.familyHoldings?.totalLiquid)}</strong></div>
+          </div>
+        </div>
+        {[
+          ['Highest Outstanding Loan', data.highestOutstandingLoan?.borrowerName, money(data.highestOutstandingLoan?.currentOutstanding)],
+          ['Highest Interest Generated', data.highestInterestGenerated?.borrowerName, money(data.highestInterestGenerated?.totalInterestGenerated)],
+          ['Most Active Borrower', data.mostActiveBorrower?.borrowerName, `${data.mostActiveBorrower?.paymentCount || 0} payments`],
+          ['Recently Added Loan', data.recentlyAddedLoan?.borrowerName, date(data.recentlyAddedLoan?.loanDate)]
+        ].map(([label, title, value]) => (
+          <div key={label} className="card p-5">
+            <p className="text-sm font-bold uppercase text-slate-500">{label}</p>
+            <p className="mt-4 text-lg font-bold">{title || '-'}</p>
+            <p className="mt-1 text-sm text-slate-500">{value || '-'}</p>
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
@@ -73,6 +101,21 @@ export default function Dashboard() {
               </div>
             ))}
             {!data.recentActivity?.length ? <EmptyState title="No activity yet" /> : null}
+          </div>
+        </div>
+        <div className="card p-5">
+          <h2 className="mb-4 text-lg font-bold">Recent Payments</h2>
+          <div className="space-y-3">
+            {(data.recentPayments || []).map((payment) => (
+              <div key={payment.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+                <div>
+                  <p className="font-semibold capitalize">{payment.paymentType}</p>
+                  <p className="text-sm text-slate-500">{date(payment.paymentDate)}</p>
+                </div>
+                <p className="font-bold text-emerald-700">{money(payment.amount)}</p>
+              </div>
+            ))}
+            {!data.recentPayments?.length ? <EmptyState title="No payments yet" /> : null}
           </div>
         </div>
         <div className="card p-5">

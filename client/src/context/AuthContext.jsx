@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
         sessionStorage.setItem('pinVerified', 'true');
         setVerified(true);
       },
+      lock: () => {
+        sessionStorage.removeItem('pinVerified');
+        setVerified(false);
+      },
       logout: () => {
         sessionStorage.removeItem('pinVerified');
         setVerified(false);

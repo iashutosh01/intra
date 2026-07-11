@@ -43,6 +43,12 @@ export const updateRow = async (title, idField, idValue, updates) => {
   return rowToObject(row, title);
 };
 
+export const upsertRow = async (title, idField, idValue, data) => {
+  const updated = await updateRow(title, idField, idValue, data);
+  if (updated) return updated;
+  return addRow(title, { ...data, [idField]: idValue });
+};
+
 export const deleteRow = async (title, idField, idValue) => {
   const sheet = await getSheet(title);
   const rows = await sheet.getRows();

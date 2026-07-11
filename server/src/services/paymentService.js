@@ -1,5 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { HISTORY_ACTIONS, SHEETS } from '../constants/index.js';
+import { calculateLoanSummary, calculatePaymentDistribution } from '../calculations/loanCalculations.js';
 import { addRow, deleteRow, listRows, updateRow } from '../googleSheets/sheetsRepository.js';
 import { AppError } from '../utils/AppError.js';
 import { compactObject, toIsoDate, toNumber } from '../utils/format.js';
@@ -27,6 +28,32 @@ export const addPayment = async (payload) => {
   });
   await createHistory({ loanId: payload.loanId, action: historyActionForPayment(payload.paymentType), newValue: payment, notes: payload.notes });
   return getLoanDetails(payload.loanId);
+};
+
+export const previewPayment = async (payload) => {
+  validatePaymentPayload(payload, true);
+  const [loans, payments] = await Promise.all([getLoansRaw(), listRows(SHEETS.payments)]);
+  const loan = loans.find((item) => item.id === payload.loanId);
+  if (!loan) throw new AppError('Loan not found', 404);
+  const summary = calculateLoanSummary(
+    loan,
+    payments.filter((payment) => payment.loanId === payload.loanId),
+    payload.paymentDate ? new Date(payload.paymentDate) : new Date()
+  );
+  const distribution = calculatePaymentDistribution(
+    { ...payload, amount: toNumber(payload.amount), paymentType: payload.paymentType || 'mixed' },
+    summary.outstandingInterest,
+    summary.remainingPrincipal
+  );
+
+  return {
+    outstandingInterest: summary.outstandingInterest,
+    outstandingPrincipal: summary.remainingPrincipal,
+    currentOutstanding: summary.currentOutstanding,
+    ...distribution,
+    interestRemaining: Math.max(0, summary.outstandingInterest - distribution.interestApplied),
+    principalRemaining: Math.max(0, summary.remainingPrincipal - distribution.principalApplied)
+  };
 };
 
 export const updatePayment = async (id, payload) => {

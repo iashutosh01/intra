@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { addPaymentController, deletePaymentController, updatePaymentController } from '../controllers/paymentController.js';
+import { addPaymentController, deletePaymentController, previewPaymentController, updatePaymentController } from '../controllers/paymentController.js';
 
 const router = Router();
 
+router.get('/preview', previewPaymentController);
 router.post('/', addPaymentController);
 router.patch('/:id', updatePaymentController);
 router.delete('/:id', deletePaymentController);

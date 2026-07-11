@@ -1,6 +1,7 @@
-import { BarChart3, CreditCard, History, LayoutDashboard, Menu, Moon, Settings, Sun, WalletCards, X } from 'lucide-react';
+import { BarChart3, CreditCard, History, LayoutDashboard, Lock, Menu, Moon, Settings, Sun, WalletCards, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -57,6 +58,7 @@ function Sidebar({ open, onClose }) {
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const { lock } = useAuth();
   const location = useLocation();
   const title = nav.find((item) => item.to === location.pathname)?.label || 'Loan Details';
 
@@ -80,9 +82,14 @@ export default function AppLayout() {
                 <h2 className="text-xl font-bold">{title}</h2>
               </div>
             </div>
-            <button className="btn-secondary p-2" onClick={() => setDark((value) => !value)} aria-label="Toggle dark mode">
-              {dark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
+            <div className="flex items-center gap-2">
+              <button className="btn-secondary p-2" onClick={() => setDark((value) => !value)} aria-label="Toggle dark mode" title="Toggle dark mode">
+                {dark ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+              <button className="btn-secondary p-2 text-red-600" onClick={lock} aria-label="Lock app" title="Lock app">
+                <Lock size={18} />
+              </button>
+            </div>
           </header>
           <main className="p-4 lg:p-8">
             <Outlet />

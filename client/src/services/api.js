@@ -23,7 +23,10 @@ export const endpoints = {
   updateLoan: (id, payload) => api.patch(`/loans/${id}`, payload),
   deleteLoan: (id) => api.delete(`/loans/${id}`),
   addPayment: (payload) => api.post('/payments', payload),
+  previewPayment: (params) => api.get('/payments/preview', { params }),
   updatePayment: (id, payload) => api.patch(`/payments/${id}`, payload),
   deletePayment: (id) => api.delete(`/payments/${id}`),
-  history: (params) => api.get('/history', { params })
+  history: (params) => api.get('/history', { params }),
+  settings: () => api.get('/settings'),
+  updateSettings: (payload) => api.patch('/settings', payload)
 };

@@ -1,15 +1,17 @@
 import { calculateDashboard } from '../calculations/loanCalculations.js';
 import { SHEETS } from '../constants/index.js';
 import { listRows } from '../googleSheets/sheetsRepository.js';
+import { getFinanceSettings } from './settingsService.js';
 import { getLoans } from './loanService.js';
 
 export const getDashboard = async () => {
-  const [loans, payments, history] = await Promise.all([
+  const [loans, payments, history, settings] = await Promise.all([
     listRows(SHEETS.loans),
     listRows(SHEETS.payments),
-    listRows(SHEETS.history)
+    listRows(SHEETS.history),
+    getFinanceSettings()
   ]);
-  return calculateDashboard(loans, payments, history);
+  return calculateDashboard(loans, payments, history, settings);
 };
 
 export const getAnalytics = async () => {

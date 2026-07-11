@@ -4,6 +4,7 @@ import dashboardRoutes from './dashboardRoutes.js';
 import historyRoutes from './historyRoutes.js';
 import loanRoutes from './loanRoutes.js';
 import paymentRoutes from './paymentRoutes.js';
+import settingsRoutes from './settingsRoutes.js';
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/loans', loanRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/history', historyRoutes);
+router.use('/settings', settingsRoutes);
 
 export default router;

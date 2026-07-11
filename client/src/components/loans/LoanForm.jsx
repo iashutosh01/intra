@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 export default function LoanForm({ initialValues = {}, onSubmit, onCancel, loading }) {
-  const { register, handleSubmit } = useForm({
+  const interestTouched = useRef(false);
+  const { register, handleSubmit, setValue, watch } = useForm({
     defaultValues: {
       borrowerName: '',
       phone: '',
@@ -15,6 +17,13 @@ export default function LoanForm({ initialValues = {}, onSubmit, onCancel, loadi
       ...initialValues
     }
   });
+  const loanDate = watch('loanDate');
+
+  useEffect(() => {
+    if (loanDate && !interestTouched.current) {
+      setValue('interestStartDate', loanDate, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [loanDate, setValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="card p-5">
@@ -25,7 +34,7 @@ export default function LoanForm({ initialValues = {}, onSubmit, onCancel, loadi
         <label className="text-sm font-semibold">Principal Amount<input className="input mt-1" type="number" min="0" step="0.01" {...register('principal', { required: true })} /></label>
         <label className="text-sm font-semibold">Monthly Interest Rate<input className="input mt-1" type="number" min="0" step="0.01" {...register('interestRate', { required: true })} /></label>
         <label className="text-sm font-semibold">Loan Date<input className="input mt-1" type="date" {...register('loanDate', { required: true })} /></label>
-        <label className="text-sm font-semibold">Interest Start Date<input className="input mt-1" type="date" {...register('interestStartDate', { required: true })} /></label>
+        <label className="text-sm font-semibold">Interest Start Date<input className="input mt-1" type="date" {...register('interestStartDate', { required: true, onChange: () => { interestTouched.current = true; } })} /></label>
         <label className="text-sm font-semibold">Status<select className="input mt-1" {...register('status')}><option value="active">Active</option><option value="closed">Closed</option></select></label>
         <label className="text-sm font-semibold md:col-span-2">Remarks<textarea className="input mt-1 min-h-24" {...register('remarks')} /></label>
       </div>

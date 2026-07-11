@@ -8,8 +8,11 @@
 # Logs
 *.log
 
+client/dist/
+server/dist/
+build/
 
-
+detail.txt
 # IDE
 .vscode/
 .idea/

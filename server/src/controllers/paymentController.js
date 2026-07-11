@@ -1,4 +1,4 @@
-import { addPayment, deletePayment, updatePayment } from '../services/paymentService.js';
+import { addPayment, deletePayment, previewPayment, updatePayment } from '../services/paymentService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const addPaymentController = asyncHandler(async (req, res) => {
@@ -11,4 +11,8 @@ export const updatePaymentController = asyncHandler(async (req, res) => {
 
 export const deletePaymentController = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await deletePayment(req.params.id) });
+});
+
+export const previewPaymentController = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await previewPayment(req.query) });
 });

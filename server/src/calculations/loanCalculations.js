@@ -153,6 +153,13 @@ export const recalculateLoan = (loan, payments = [], asOf = new Date()) => {
   const outstandingInterest = roundMoney(state.outstandingInterest + liveInterest);
   const currentOutstanding = roundMoney(state.remainingPrincipal + outstandingInterest);
   const status = loan.status === 'closed' || currentOutstanding <= 0 ? 'closed' : 'active';
+  const lastPayment = sortedPayments.at(-1);
+  const lastPaymentDate = lastPayment?.paymentDate || '';
+  const nextInterestDueDate = new Date(state.interestCursorDate || interestStartDate);
+  nextInterestDueDate.setMonth(nextInterestDueDate.getMonth() + 1);
+  const daysSinceLastPayment = lastPaymentDate
+    ? Math.max(0, Math.floor((startOfDay(asOf) - startOfDay(lastPaymentDate)) / MS_PER_DAY))
+    : null;
 
   return {
     ...loan,
@@ -161,9 +168,14 @@ export const recalculateLoan = (loan, payments = [], asOf = new Date()) => {
     principalPaid: roundMoney(state.principalPaid),
     interestPaid: roundMoney(state.interestPaid),
     lastInterestPaidDate: state.lastInterestPaidDate,
+    lastPaymentDate,
+    nextInterestDueDate: nextInterestDueDate.toISOString(),
+    numberOfPayments: sortedPayments.length,
     remainingPrincipal: roundMoney(state.remainingPrincipal),
+    outstandingPrincipal: roundMoney(state.remainingPrincipal),
     interestTillToday: roundMoney(liveInterest),
     outstandingInterest,
+    totalInterestGenerated: roundMoney(state.interestPaid + outstandingInterest),
     currentOutstanding,
     totalReceived: roundMoney(state.principalPaid + state.interestPaid),
     status,
@@ -171,6 +183,7 @@ export const recalculateLoan = (loan, payments = [], asOf = new Date()) => {
     interestDuration: calculateDuration(state.interestCursorDate, asOf),
     totalMonths: calculateMonths(loan.loanDate, asOf),
     totalYears: calculateYears(loan.loanDate, asOf),
+    daysSinceLastPayment,
     paymentApplications: state.paymentApplications
   };
 };
@@ -193,7 +206,7 @@ const addToBucket = (buckets, key, field, amount) => {
   buckets[key][field] = roundMoney(buckets[key][field] + amount);
 };
 
-export const calculateDashboard = (loans = [], payments = [], history = [], asOf = new Date()) => {
+export const calculateDashboard = (loans = [], payments = [], history = [], settings = {}, asOf = new Date()) => {
   const summaries = loans.map((loan) => calculateLoanSummary(loan, payments, asOf));
   const buckets = {};
 
@@ -223,9 +236,39 @@ export const calculateDashboard = (loans = [], payments = [], history = [], asOf
       closedLoans: 0
     }
   );
+  const todayKey = startOfDay(asOf).toISOString().slice(0, 10);
+  const currentMonth = monthKey(asOf);
+  const todayCollection = payments
+    .filter((payment) => startOfDay(payment.paymentDate || payment.createdAt).toISOString().slice(0, 10) === todayKey)
+    .reduce((sum, payment) => roundMoney(sum + toNumber(payment.amount)), 0);
+  const monthCollection = payments
+    .filter((payment) => monthKey(payment.paymentDate || payment.createdAt) === currentMonth)
+    .reduce((sum, payment) => roundMoney(sum + toNumber(payment.amount)), 0);
+  const liquidCash = {
+    cashInHand: roundMoney(settings.cashInHand),
+    moneyWithMummy: roundMoney(settings.moneyWithMummy),
+    moneyWithPapa: roundMoney(settings.moneyWithPapa)
+  };
+  liquidCash.totalLiquid = roundMoney(liquidCash.cashInHand + liquidCash.moneyWithMummy + liquidCash.moneyWithPapa);
+  const sortedByOutstanding = [...summaries].sort((a, b) => b.currentOutstanding - a.currentOutstanding);
+  const sortedByInterest = [...summaries].sort((a, b) => b.totalInterestGenerated - a.totalInterestGenerated);
+  const paymentCounts = payments.reduce((acc, payment) => {
+    acc[payment.loanId] = (acc[payment.loanId] || 0) + 1;
+    return acc;
+  }, {});
+  const mostActiveBorrower = [...summaries].sort((a, b) => (paymentCounts[b.id] || 0) - (paymentCounts[a.id] || 0))[0] || null;
 
   return {
     ...totals,
+    todayCollection,
+    monthCollection,
+    familyHoldings: liquidCash,
+    netWorth: roundMoney(liquidCash.totalLiquid + totals.currentOutstandingAmount),
+    highestOutstandingLoan: sortedByOutstanding[0] || null,
+    highestInterestGenerated: sortedByInterest[0] || null,
+    mostActiveBorrower: mostActiveBorrower ? { ...mostActiveBorrower, paymentCount: paymentCounts[mostActiveBorrower.id] || 0 } : null,
+    recentlyAddedLoan: [...summaries].sort((a, b) => new Date(b.createdAt || b.loanDate) - new Date(a.createdAt || a.loanDate))[0] || null,
+    recentPayments: [...payments].sort((a, b) => new Date(b.paymentDate || b.createdAt) - new Date(a.paymentDate || a.createdAt)).slice(0, 6),
     totalBorrowers: new Set(loans.map((loan) => String(loan.borrowerName).toLowerCase())).size,
     recentActivity: history.slice(-8).reverse(),
     upcomingInterestDue: summaries

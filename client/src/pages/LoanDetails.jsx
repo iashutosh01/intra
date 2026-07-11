@@ -58,24 +58,32 @@ export default function LoanDetails() {
 
   const metrics = [
     ['Principal', money(loan.principal)],
+    ['Loan Date', date(loan.loanDate)],
+    ['Interest Start Date', date(loan.interestStartDate)],
     ['Interest Rate', percent(loan.interestRate)],
+    ['Last Payment Date', date(loan.lastPaymentDate)],
+    ['Next Interest Due', date(loan.nextInterestDueDate)],
+    ['Number of Payments', loan.numberOfPayments || 0],
+    ['Total Interest Generated', money(loan.totalInterestGenerated)],
     ['Last Interest Paid', date(loan.lastInterestPaidDate)],
     ['Principal Paid', money(loan.principalPaid)],
     ['Interest Paid', money(loan.interestPaid)],
     ['Outstanding Interest', money(loan.outstandingInterest)],
-    ['Outstanding Principal', money(loan.remainingPrincipal)],
+    ['Outstanding Principal', money(loan.outstandingPrincipal ?? loan.remainingPrincipal)],
     ['Current Total', money(loan.currentOutstanding)],
+    ['Current Outstanding', money(loan.currentOutstanding)],
     ['Loan Duration', loan.loanDuration],
     ['Interest Duration', loan.interestDuration],
     ['Total Months', loan.totalMonths],
-    ['Total Years', loan.totalYears]
+    ['Total Years', loan.totalYears],
+    ['Days Since Last Payment', loan.daysSinceLastPayment ?? '-']
   ];
 
   return (
     <>
       <PageHeader
         title={loan.borrowerName}
-        description={`${loan.phone || 'No phone'} • ${loan.address || 'No address'}`}
+        description={`${loan.phone || 'No phone'} - ${loan.address || 'No address'}`}
         actions={<><Link className="btn-secondary" to="/loans"><ArrowLeft size={16} />Back</Link><button className="btn-secondary" onClick={() => setEditing((v) => !v)}><Pencil size={16} />Edit</button><button className="btn-secondary text-red-600" onClick={() => setConfirm({ type: 'loan' })}><Trash2 size={16} />Delete</button></>}
       />
       {editing ? <div className="mb-6"><LoanForm initialValues={loan} onSubmit={saveLoan} onCancel={() => setEditing(false)} /></div> : null}
