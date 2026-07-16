@@ -26,7 +26,7 @@ export const addRow = async (title, data) => {
   const payload = {};
   for (const header of SHEET_HEADERS[title]) payload[header] = data[header] ?? '';
   const row = await sheet.addRow(payload);
-  invalidateCache();
+  invalidateCache(`sheet:${title}`);
   return rowToObject(row, title);
 };
 
@@ -39,7 +39,7 @@ export const updateRow = async (title, idField, idValue, updates) => {
     if (SHEET_HEADERS[title].includes(key)) row.set(key, value ?? '');
   }
   await row.save();
-  invalidateCache();
+  invalidateCache(`sheet:${title}`);
   return rowToObject(row, title);
 };
 
@@ -56,7 +56,7 @@ export const deleteRow = async (title, idField, idValue) => {
   if (!row) return null;
   const snapshot = rowToObject(row, title);
   await row.delete();
-  invalidateCache();
+  invalidateCache(`sheet:${title}`);
   return snapshot;
 };
 
@@ -66,6 +66,6 @@ export const deleteRowsBy = async (title, idField, idValue) => {
   const matches = rows.filter((item) => item.get(idField) === idValue);
   const snapshots = matches.map((row) => rowToObject(row, title));
   for (const row of matches) await row.delete();
-  invalidateCache();
+  invalidateCache(`sheet:${title}`);
   return snapshots;
 };

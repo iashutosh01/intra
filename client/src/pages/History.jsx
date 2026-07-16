@@ -1,8 +1,7 @@
 import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
-import { useAsync } from '../hooks/useAsync.js';
-import { endpoints } from '../services/api.js';
+import { useFinance } from '../context/FinanceContext.jsx';
 import { date, money } from '../utils/format.js';
 
 const actionClass = (action = '') => {
@@ -14,7 +13,7 @@ const actionClass = (action = '') => {
 };
 
 export default function History() {
-  const { data = [], loading } = useAsync(() => endpoints.history(), []);
+  const { history: data, loading, openPerson } = useFinance();
   return (
     <>
       <PageHeader title="History" description="Permanent audit trail for loan and payment actions." />
@@ -27,7 +26,7 @@ export default function History() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.map((item) => (
                 <tr key={item.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-900">
-                  <td className="px-4 py-3 font-bold">{item.borrowerName || '-'}</td>
+                  <td className="px-4 py-3 font-bold"><button className="text-brand-700 hover:underline" onClick={() => item.loanId && openPerson(item.loanId)}>{item.borrowerName || '-'}</button></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${actionClass(item.action)}`}>{item.action}</span></td>
                   <td className="px-4 py-3 font-semibold">{item.amount ? money(item.amount) : '-'}</td>
                   <td className="px-4 py-3">{date(item.date || item.timestamp)}</td>

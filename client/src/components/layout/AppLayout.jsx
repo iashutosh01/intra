@@ -2,6 +2,7 @@ import { BarChart3, CreditCard, History, LayoutDashboard, Lock, Menu, Moon, Sett
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { FinanceProvider } from '../../context/FinanceContext.jsx';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -91,9 +92,9 @@ export default function AppLayout() {
               </button>
             </div>
           </header>
-          <main className="p-4 lg:p-8">
-            <Outlet />
-          </main>
+          <FinanceProvider>
+            <main className="p-4 lg:p-8"><Outlet /></main>
+          </FinanceProvider>
         </div>
       </div>
     </div>

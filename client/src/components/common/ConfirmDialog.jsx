@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 export default function ConfirmDialog({ open, title, message, onConfirm, onClose }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" onMouseDown={(event) => event.stopPropagation()}>
       <div className="card w-full max-w-md p-5">
         <div className="flex items-start justify-between">
           <div>

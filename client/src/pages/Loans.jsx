@@ -1,37 +1,26 @@
 import { Download, FileSpreadsheet, FileText, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
-import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
-import BorrowerQuickView from '../components/loans/BorrowerQuickView.jsx';
 import LoanForm from '../components/loans/LoanForm.jsx';
-import { useAsync } from '../hooks/useAsync.js';
-import { endpoints } from '../services/api.js';
+import { StatusBadge } from '../components/finance/Badges.jsx';
+import { useFinance } from '../context/FinanceContext.jsx';
 import { date, money, percent } from '../utils/format.js';
 
-const getLoanStatus = (loan) => {
-  if (loan.status === 'closed') return { label: 'Closed', className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200' };
-  if (loan.outstandingInterest > 0 && Number(loan.daysSinceLastPayment || 0) > 45) return { label: 'Overdue', className: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-200' };
-  if (loan.outstandingInterest > 0) return { label: 'Interest Due', className: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-200' };
-  return { label: 'Active', className: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200' };
-};
-
 export default function Loans() {
+  const { actions, loading, openPerson, selectLoans } = useFinance();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState(() => localStorage.getItem('loans.sort') || 'newest');
   const [status, setStatus] = useState(() => localStorage.getItem('loans.status') || '');
   const [editingLoan, setEditingLoan] = useState(null);
-  const [quickView, setQuickView] = useState({ open: false, id: '', loan: null, loading: false });
-  const [confirmDelete, setConfirmDelete] = useState(null);
   const [highlightId, setHighlightId] = useState('');
   const searchRef = useRef(null);
   const rowRefs = useRef({});
   const query = useMemo(() => ({ search, sort, status }), [search, sort, status]);
-  const { data = [], loading, refresh } = useAsync(() => endpoints.loans(query), [query]);
+  const data = useMemo(() => selectLoans(query), [query, selectLoans]);
 
   useEffect(() => {
     localStorage.setItem('loans.sort', sort);
@@ -51,7 +40,6 @@ export default function Loans() {
       if (event.key === 'Escape') {
         setShowForm(false);
         setEditingLoan(null);
-        setQuickView((value) => ({ ...value, open: false }));
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -66,39 +54,18 @@ export default function Loans() {
   }, [highlightId, loading, data]);
 
   const create = async (payload) => {
-    const response = await endpoints.createLoan(payload);
+    const response = await actions.createLoan(payload);
     toast.success('Loan created');
     setShowForm(false);
-    setHighlightId(response.data.id);
-    refresh();
+    setHighlightId(response.id);
   };
 
   const update = async (payload) => {
-    const response = await endpoints.updateLoan(editingLoan.id, payload);
+    const response = await actions.updateLoan(editingLoan.id, payload);
     toast.success('Loan updated');
     setEditingLoan(null);
     setShowForm(false);
-    setHighlightId(response.data.id);
-    refresh();
-  };
-
-  const openQuickView = async (loan) => {
-    setQuickView({ open: true, id: loan.id, loan, loading: true });
-    try {
-      const response = await endpoints.loan(loan.id);
-      setQuickView({ open: true, id: loan.id, loan: response.data, loading: false });
-    } catch (error) {
-      toast.error(error.message);
-      setQuickView({ open: false, id: '', loan: null, loading: false });
-    }
-  };
-
-  const deleteLoan = async () => {
-    await endpoints.deleteLoan(confirmDelete.id);
-    toast.success('Loan deleted');
-    setConfirmDelete(null);
-    setQuickView({ open: false, id: '', loan: null, loading: false });
-    refresh();
+    setHighlightId(response.id);
   };
 
   const exportCsv = () => {
@@ -140,7 +107,7 @@ export default function Loans() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {data.map((loan) => (
                   <tr key={loan.id} ref={(node) => { rowRefs.current[loan.id] = node; }} className={`transition hover:bg-blue-50/60 dark:hover:bg-slate-900 ${highlightId === loan.id ? 'bg-emerald-50 dark:bg-emerald-950/40' : ''}`}>
-                    <td className="px-4 py-3"><button className="text-left font-bold text-brand-700 hover:underline" onClick={() => openQuickView(loan)}>{loan.borrowerName}</button><p className="text-xs text-slate-500">{loan.phone || '-'}</p></td>
+                    <td className="px-4 py-3"><button className="text-left font-bold text-brand-700 hover:underline" onClick={() => openPerson(loan.id)}>{loan.borrowerName}</button><p className="text-xs text-slate-500">{loan.phone || '-'}</p></td>
                     <td className="px-4 py-3">{money(loan.principal)}</td>
                     <td className="px-4 py-3">{percent(loan.interestRate)}</td>
                     <td className="px-4 py-3">{date(loan.loanDate)}</td>
@@ -148,8 +115,8 @@ export default function Loans() {
                     <td className="px-4 py-3 font-semibold text-orange-700 dark:text-orange-300">{money(loan.outstandingInterest)}</td>
                     <td className="px-4 py-3">{money(loan.remainingPrincipal)}</td>
                     <td className="px-4 py-3 font-bold text-slate-950 dark:text-white">{money(loan.currentOutstanding)}</td>
-                    <td className="px-4 py-3"><span className={`rounded-full px-2 py-1 text-xs font-bold ${getLoanStatus(loan).className}`}>{getLoanStatus(loan).label}</span></td>
-                    <td className="px-4 py-3"><Link className="font-bold text-brand-600" to={`/loans/${loan.id}`}>Open</Link></td>
+                    <td className="px-4 py-3"><StatusBadge loan={loan} /></td>
+                    <td className="px-4 py-3"><button className="font-bold text-brand-600" onClick={() => openPerson(loan.id)}>Open</button></td>
                   </tr>
                 ))}
               </tbody>
@@ -157,24 +124,6 @@ export default function Loans() {
           </div>
         ) : <EmptyState title="No loans found" />}
       </div>
-      <BorrowerQuickView
-        open={quickView.open}
-        loan={quickView.loan}
-        loading={quickView.loading}
-        onClose={() => setQuickView({ open: false, id: '', loan: null, loading: false })}
-        onEdit={() => {
-          setEditingLoan(quickView.loan);
-          setQuickView({ open: false, id: '', loan: null, loading: false });
-        }}
-        onDelete={() => setConfirmDelete(quickView.loan)}
-      />
-      <ConfirmDialog
-        open={!!confirmDelete}
-        title="Delete loan?"
-        message="This will delete the loan, remove its payments, and write a history record."
-        onClose={() => setConfirmDelete(null)}
-        onConfirm={deleteLoan}
-      />
     </>
   );
 }

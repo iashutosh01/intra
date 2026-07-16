@@ -4,12 +4,11 @@ import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
 import StatCard from '../components/common/StatCard.jsx';
-import { useAsync } from '../hooks/useAsync.js';
-import { endpoints } from '../services/api.js';
+import { useFinance } from '../context/FinanceContext.jsx';
 import { date, money } from '../utils/format.js';
 
 export default function Dashboard() {
-  const { data, loading } = useAsync(endpoints.dashboard, []);
+  const { dashboard: data, loading, openPerson } = useFinance();
 
   if (loading) {
     return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>;
@@ -50,13 +49,14 @@ export default function Dashboard() {
           ['Highest Interest Generated', data.highestInterestGenerated?.borrowerName, money(data.highestInterestGenerated?.totalInterestGenerated)],
           ['Most Active Borrower', data.mostActiveBorrower?.borrowerName, `${data.mostActiveBorrower?.paymentCount || 0} payments`],
           ['Recently Added Loan', data.recentlyAddedLoan?.borrowerName, date(data.recentlyAddedLoan?.loanDate)]
-        ].map(([label, title, value]) => (
-          <div key={label} className="card p-5">
+        ].map(([label, title, value], index) => {
+          const summary = [data.highestOutstandingLoan, data.highestInterestGenerated, data.mostActiveBorrower, data.recentlyAddedLoan][index];
+          return <button key={label} className="card p-5 text-left" onClick={() => summary?.id && openPerson(summary.id)}>
             <p className="text-sm font-bold uppercase text-slate-500">{label}</p>
             <p className="mt-4 text-lg font-bold">{title || '-'}</p>
             <p className="mt-1 text-sm text-slate-500">{value || '-'}</p>
-          </div>
-        ))}
+          </button>;
+        })}
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[2fr_1fr]">
@@ -79,7 +79,7 @@ export default function Dashboard() {
         <div className="card p-5">
           <h2 className="mb-4 text-lg font-bold">Top Borrowers</h2>
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={data.charts.topBorrowers || []} layout="vertical">
+            <BarChart data={data.charts.topBorrowers || []} layout="vertical" onClick={(event) => event?.activePayload?.[0]?.payload?.loanId && openPerson(event.activePayload[0].payload.loanId)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" width={90} />
@@ -95,10 +95,10 @@ export default function Dashboard() {
           <h2 className="mb-4 text-lg font-bold">Recent Activity</h2>
           <div className="space-y-3">
             {(data.recentActivity || []).map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-800">
+              <button key={item.id} className="block w-full rounded-lg border border-slate-200 p-3 text-left text-sm dark:border-slate-800" onClick={() => item.loanId && openPerson(item.loanId)}>
                 <p className="font-semibold">{item.action}</p>
                 <p className="text-slate-500">{date(item.timestamp)} {item.notes ? `- ${item.notes}` : ''}</p>
-              </div>
+              </button>
             ))}
             {!data.recentActivity?.length ? <EmptyState title="No activity yet" /> : null}
           </div>
@@ -107,13 +107,13 @@ export default function Dashboard() {
           <h2 className="mb-4 text-lg font-bold">Recent Payments</h2>
           <div className="space-y-3">
             {(data.recentPayments || []).map((payment) => (
-              <div key={payment.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+              <button key={payment.id} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left dark:border-slate-800" onClick={() => openPerson(payment.loanId)}>
                 <div>
                   <p className="font-semibold capitalize">{payment.paymentType}</p>
                   <p className="text-sm text-slate-500">{date(payment.paymentDate)}</p>
                 </div>
                 <p className="font-bold text-emerald-700">{money(payment.amount)}</p>
-              </div>
+              </button>
             ))}
             {!data.recentPayments?.length ? <EmptyState title="No payments yet" /> : null}
           </div>
@@ -122,13 +122,13 @@ export default function Dashboard() {
           <h2 className="mb-4 text-lg font-bold">Upcoming Interest Due</h2>
           <div className="space-y-3">
             {(data.upcomingInterestDue || []).map((loan) => (
-              <div key={loan.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-800">
+              <button key={loan.id} className="flex w-full items-center justify-between rounded-lg border border-slate-200 p-3 text-left dark:border-slate-800" onClick={() => openPerson(loan.id)}>
                 <div>
                   <p className="font-semibold">{loan.borrowerName}</p>
                   <p className="text-sm text-slate-500">{loan.interestDuration}</p>
                 </div>
                 <p className="font-bold text-brand-600">{money(loan.outstandingInterest)}</p>
-              </div>
+              </button>
             ))}
             {!data.upcomingInterestDue?.length ? <EmptyState title="No active interest due" /> : null}
           </div>

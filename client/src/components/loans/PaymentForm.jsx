@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { endpoints } from '../../services/api.js';
+import { useFinance } from '../../context/FinanceContext.jsx';
 import { money } from '../../utils/format.js';
 
 export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCancel }) {
+  const { actions } = useFinance();
   const [preview, setPreview] = useState(null);
   const { register, handleSubmit, watch } = useForm({
     defaultValues: {
@@ -26,14 +27,13 @@ export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCa
     }
     const timer = setTimeout(async () => {
       try {
-        const response = await endpoints.previewPayment({ loanId, amount, paymentDate, paymentType });
-        setPreview(response.data);
+        setPreview(await actions.previewPayment({ loanId, amount, paymentDate, paymentType }));
       } catch {
         setPreview(null);
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [loanId, amount, paymentDate, paymentType]);
+  }, [actions, loanId, amount, paymentDate, paymentType]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">

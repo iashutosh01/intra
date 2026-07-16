@@ -5,27 +5,23 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useAsync } from '../hooks/useAsync.js';
-import { endpoints } from '../services/api.js';
+import { useFinance } from '../context/FinanceContext.jsx';
 import { money } from '../utils/format.js';
 
 export default function Settings() {
   const { lock } = useAuth();
-  const { data, loading, refresh } = useAsync(endpoints.settings, []);
-  const { register, handleSubmit, reset, watch } = useForm({
+  const { settings: data, loading, actions } = useFinance();
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: { cashInHand: 0, moneyWithMummy: 0, moneyWithPapa: 0 }
   });
-  const values = watch();
-  const totalLiquid = Number(values.cashInHand || 0) + Number(values.moneyWithMummy || 0) + Number(values.moneyWithPapa || 0);
 
   useEffect(() => {
     if (data) reset(data);
   }, [data, reset]);
 
   const save = async (payload) => {
-    await endpoints.updateSettings(payload);
+    await actions.updateSettings(payload);
     toast.success('Settings saved');
-    refresh();
   };
 
   return (
@@ -57,7 +53,7 @@ export default function Settings() {
             <label className="text-sm font-semibold">Money with Papa<input className="input mt-1" type="number" min="0" step="0.01" {...register('moneyWithPapa')} /></label>
             <div className="rounded-lg bg-slate-50 p-4 dark:bg-slate-950">
               <p className="text-sm text-slate-500">Total Liquid</p>
-              <p className="text-2xl font-bold">{money(totalLiquid)}</p>
+              <p className="text-2xl font-bold">{money(data?.totalLiquid)}</p>
             </div>
             <button className="btn-primary">Save Settings</button>
           </form>

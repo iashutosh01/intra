@@ -9,6 +9,8 @@ const SETTINGS_KEYS = {
   moneyWithPapa: 'MONEY_WITH_PAPA'
 };
 
+const PIN_KEY = 'PIN';
+
 export const getFinanceSettings = async () => {
   const rows = await listRows(SHEETS.settings);
   const byKey = Object.fromEntries(rows.map((row) => [row.key, row.value]));
@@ -37,8 +39,8 @@ export const updateFinanceSettings = async (payload) => {
 
 export const verifyPin = async (pin) => {
   if (!pin) throw new AppError('PIN is required', 400);
-  const rows = await listRows(SHEETS.settings);
-  const configuredPin = rows.find((row) => row.key === 'PIN')?.value;
+  const rows = await listRows(SHEETS.settings, false);
+  const configuredPin = rows.find((row) => row.key === PIN_KEY)?.value;
   if (!configuredPin) throw new AppError('PIN is not configured in Settings sheet', 503);
   if (String(pin) !== String(configuredPin)) throw new AppError('Invalid PIN', 401);
   return true;

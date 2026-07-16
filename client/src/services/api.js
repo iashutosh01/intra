@@ -15,6 +15,7 @@ api.interceptors.response.use(
 
 export const endpoints = {
   verifyPin: (pin) => api.post('/auth/verify-pin', { pin }),
+  finance: () => api.get('/finance'),
   dashboard: () => api.get('/dashboard'),
   analytics: () => api.get('/dashboard/analytics'),
   loans: (params) => api.get('/loans', { params }),

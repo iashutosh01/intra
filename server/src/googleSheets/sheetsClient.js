@@ -3,9 +3,6 @@ import { JWT } from 'google-auth-library';
 import { env } from '../config/env.js';
 import { SHEET_HEADERS, SHEETS } from '../constants/index.js';
 import { AppError } from '../utils/AppError.js';
-import fs from "fs";
-
-
 let documentPromise;
 
 const assertGoogleConfig = () => {
@@ -27,7 +24,10 @@ export const getSpreadsheet = async () => {
       scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
     const doc = new GoogleSpreadsheet(env.googleSheetId, serviceAccountAuth);
-    documentPromise = doc.loadInfo().then(() => doc);
+    documentPromise = doc.loadInfo().then(() => doc).catch((err) => {
+      documentPromise = null;
+      throw new AppError('Unable to connect to Google Sheets', 503, err.code || err.message);
+    });
   }
   return documentPromise;
 };

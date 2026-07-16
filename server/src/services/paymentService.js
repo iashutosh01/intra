@@ -1,12 +1,13 @@
 import { v4 as uuid } from 'uuid';
 import { HISTORY_ACTIONS, SHEETS } from '../constants/index.js';
-import { calculateLoanSummary, calculatePaymentDistribution } from '../calculations/loanCalculations.js';
+import { LoanCalculationEngine } from '../calculations/LoanCalculationEngine.js';
 import { addRow, deleteRow, listRows, updateRow } from '../googleSheets/sheetsRepository.js';
 import { AppError } from '../utils/AppError.js';
 import { compactObject, toIsoDate, toNumber } from '../utils/format.js';
 import { validatePaymentPayload } from '../validators/loanValidator.js';
 import { createHistory } from './historyService.js';
 import { getLoanDetails, getLoansRaw } from './loanService.js';
+import { getLoanSummary } from './financeService.js';
 
 const historyActionForPayment = (type) =>
   type === 'interest' ? HISTORY_ACTIONS.interestPaid : type === 'principal' ? HISTORY_ACTIONS.principalPaid : HISTORY_ACTIONS.mixedPayment;
@@ -32,28 +33,8 @@ export const addPayment = async (payload) => {
 
 export const previewPayment = async (payload) => {
   validatePaymentPayload(payload, true);
-  const [loans, payments] = await Promise.all([getLoansRaw(), listRows(SHEETS.payments)]);
-  const loan = loans.find((item) => item.id === payload.loanId);
-  if (!loan) throw new AppError('Loan not found', 404);
-  const summary = calculateLoanSummary(
-    loan,
-    payments.filter((payment) => payment.loanId === payload.loanId),
-    payload.paymentDate ? new Date(payload.paymentDate) : new Date()
-  );
-  const distribution = calculatePaymentDistribution(
-    { ...payload, amount: toNumber(payload.amount), paymentType: payload.paymentType || 'mixed' },
-    summary.outstandingInterest,
-    summary.remainingPrincipal
-  );
-
-  return {
-    outstandingInterest: summary.outstandingInterest,
-    outstandingPrincipal: summary.remainingPrincipal,
-    currentOutstanding: summary.currentOutstanding,
-    ...distribution,
-    interestRemaining: Math.max(0, summary.outstandingInterest - distribution.interestApplied),
-    principalRemaining: Math.max(0, summary.remainingPrincipal - distribution.principalApplied)
-  };
+  const summary = await getLoanSummary(payload.loanId, payload.paymentDate ? new Date(payload.paymentDate) : new Date());
+  return LoanCalculationEngine.calculatePaymentPreview(summary, payload);
 };
 
 export const updatePayment = async (id, payload) => {
