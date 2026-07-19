@@ -70,7 +70,8 @@ export default function Loans() {
 
   const exportCsv = () => {
     const params = new URLSearchParams(query).toString();
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/loans/export?${params}`;
+    window.location.href =
+`${import.meta.env.VITE_API_URL}/api/loans/export?${params}`;
   };
 
   const exportExcel = () => {
