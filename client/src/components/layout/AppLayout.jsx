@@ -1,8 +1,9 @@
-import { BarChart3, CreditCard, History, LayoutDashboard, Lock, Menu, Moon, Settings, Sun, WalletCards, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { BarChart3, CircleDollarSign, CreditCard, History, LayoutDashboard, Lock, Menu, Moon, Plus, Settings, Sun, WalletCards, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { FinanceProvider } from '../../context/FinanceContext.jsx';
+import QuickAccessModal from '../finance/QuickAccessModal.jsx';
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,7 +14,7 @@ const nav = [
   { to: '/settings', label: 'Settings', icon: Settings }
 ];
 
-function Sidebar({ open, onClose }) {
+function Sidebar({ open, onClose, onQuickAdd }) {
   return (
     <>
       <div className={`fixed inset-0 z-30 bg-slate-950/40 lg:hidden ${open ? 'block' : 'hidden'}`} onClick={onClose} />
@@ -50,6 +51,21 @@ function Sidebar({ open, onClose }) {
               {item.label}
             </NavLink>
           ))}
+          <div className="my-3 border-t border-slate-200 dark:border-slate-800" />
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+            onClick={() => { onQuickAdd('loan'); onClose(); }}
+          >
+            <Plus size={19} />Add Loan
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"
+            onClick={() => { onQuickAdd('payment'); onClose(); }}
+          >
+            <CircleDollarSign size={19} />Add Payment
+          </button>
         </nav>
       </aside>
     </>
@@ -58,7 +74,9 @@ function Sidebar({ open, onClose }) {
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [quickMode, setQuickMode] = useState(null);
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
+  const closeQuickAccess = useCallback(() => setQuickMode(null), []);
   const { lock } = useAuth();
   const location = useLocation();
   const title = nav.find((item) => item.to === location.pathname)?.label || 'Loan Details';
@@ -71,7 +89,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="flex min-h-screen">
-        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} onQuickAdd={setQuickMode} />
         <div className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 lg:px-8">
             <div className="flex items-center gap-3">
@@ -94,6 +112,7 @@ export default function AppLayout() {
           </header>
           <FinanceProvider>
             <main className="p-4 lg:p-8"><Outlet /></main>
+            <QuickAccessModal mode={quickMode} onClose={closeQuickAccess} />
           </FinanceProvider>
         </div>
       </div>

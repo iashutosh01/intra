@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useFinance } from '../../context/FinanceContext.jsx';
 import { money } from '../../utils/format.js';
 
-export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCancel }) {
+export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCancel, loading = false }) {
   const { actions } = useFinance();
   const [preview, setPreview] = useState(null);
   const { register, handleSubmit, watch } = useForm({
@@ -49,7 +49,7 @@ export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCa
         <input className="input" placeholder="Notes" aria-label="Payment notes" {...register('notes')} />
         <div className="flex gap-2">
           {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button> : null}
-          <button className="btn-primary">Save</button>
+          <button className="btn-primary" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
         </div>
       </div>
       {preview ? (
