@@ -10,8 +10,10 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  env.CLIENT_ORIGIN,
+  env.clientOrigin,
 ].filter(Boolean);
+
+// console.log("Allowed Origins:", allowedOrigins);
 
 app.use(
   cors({
@@ -25,6 +27,18 @@ app.use(
     credentials: true,
   })
 );
+
+// app.use(
+//   cors({
+//     origin(origin, callback) {
+//       if (!origin || allowedOrigins.includes(origin)) {
+//         return callback(null, true);
+//       }
+//       return callback(new Error(`CORS Not Allowed: ${origin}`));
+//     },
+//     credentials: true,
+//   })
+// );
 
 app.use(express.json({ limit: '1mb' }));
 
