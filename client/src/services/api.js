@@ -29,6 +29,7 @@ export const endpoints = {
   updatePayment: (id, payload) => api.patch(`/payments/${id}`, payload),
   deletePayment: (id) => api.delete(`/payments/${id}`),
   history: (params) => api.get('/history', { params }),
+  deleteHistory: (id) => api.delete(`/history/${id}`),
   settings: () => api.get('/settings'),
   updateSettings: (payload) => api.patch('/settings', payload)
 };

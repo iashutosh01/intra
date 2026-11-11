@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import ConfirmDialog from '../components/common/ConfirmDialog.jsx';
 import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
@@ -13,19 +16,51 @@ const actionClass = (action = '') => {
 };
 
 export default function History() {
-  const { history: data, loading, openPerson } = useFinance();
+  const { actions, history: data, loading, openPerson } = useFinance();
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const allSelected = data.length > 0 && data.every((item) => selectedIds.includes(item.id));
+
+  const deleteSelected = async () => {
+    if (!confirmed || !selectedIds.length || deleting) return;
+    setDeleting(true);
+    try {
+      for (const id of [...selectedIds]) {
+        await actions.deleteHistory(id);
+        setSelectedIds((current) => current.filter((selectedId) => selectedId !== id));
+      }
+      setConfirmOpen(false);
+      setConfirmed(false);
+      toast.success('Selected history entries deleted');
+    } catch (error) {
+      toast.error(error.message || 'Could not delete history entries');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader title="History" description="Permanent audit trail for loan and payment actions." />
       <div className="card overflow-hidden">
         {loading ? <Skeleton className="h-96" /> : data.length ? (
+          <>
+          {selectedIds.length ? <div className="flex justify-end border-b border-slate-200 p-3 dark:border-slate-800">
+            <button className="btn-secondary text-red-600" onClick={() => setConfirmOpen(true)} disabled={deleting}>Delete selected ({selectedIds.length})</button>
+          </div> : null}
           <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500 dark:bg-slate-900">
-              <tr><th className="px-4 py-3">Borrower</th><th className="px-4 py-3">Action</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Remarks</th></tr>
+              <tr>
+                <th className="px-4 py-3"><input type="checkbox" aria-label="Select all history entries" className="rounded border-slate-300 text-red-600 focus:ring-red-500" checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? data.map((item) => item.id) : [])} /></th>
+                <th className="px-4 py-3">Borrower</th><th className="px-4 py-3">Action</th><th className="px-4 py-3">Amount</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Remarks</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.map((item) => (
                 <tr key={item.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-900">
+                  <td className="px-4 py-3"><input type="checkbox" aria-label={`Select ${item.action} history entry`} className="rounded border-slate-300 text-red-600 focus:ring-red-500" checked={selectedIds.includes(item.id)} onChange={() => setSelectedIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id])} /></td>
                   <td className="px-4 py-3 font-bold"><button className="text-brand-700 hover:underline" onClick={() => item.loanId && openPerson(item.loanId)}>{item.borrowerName || '-'}</button></td>
                   <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${actionClass(item.action)}`}>{item.action}</span></td>
                   <td className="px-4 py-3 font-semibold">{item.amount ? money(item.amount) : '-'}</td>
@@ -35,8 +70,22 @@ export default function History() {
               ))}
             </tbody>
           </table>
+          </>
         ) : <EmptyState title="No history yet" />}
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete selected history entries?"
+        message={`This permanently removes ${selectedIds.length} selected ${selectedIds.length === 1 ? 'entry' : 'entries'} from the audit history and each loan timeline.`}
+        confirmationLabel="I understand these history entries will be permanently deleted."
+        confirmationChecked={confirmed}
+        onConfirmationChange={setConfirmed}
+        confirmDisabled={!confirmed}
+        confirmLabel="Delete"
+        busy={deleting}
+        onClose={() => { setConfirmOpen(false); setConfirmed(false); }}
+        onConfirm={deleteSelected}
+      />
     </>
   );
 }

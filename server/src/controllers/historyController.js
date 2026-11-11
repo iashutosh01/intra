@@ -1,6 +1,10 @@
-import { getHistory } from '../services/historyService.js';
+import { deleteHistory, getHistory } from '../services/historyService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const historyController = asyncHandler(async (req, res) => {
   res.json({ success: true, data: await getHistory(req.query) });
+});
+
+export const deleteHistoryController = asyncHandler(async (req, res) => {
+  res.json({ success: true, data: await deleteHistory(req.params.id) });
 });

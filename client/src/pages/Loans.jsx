@@ -5,9 +5,9 @@ import EmptyState from '../components/common/EmptyState.jsx';
 import PageHeader from '../components/common/PageHeader.jsx';
 import Skeleton from '../components/common/Skeleton.jsx';
 import LoanForm from '../components/loans/LoanForm.jsx';
-import { StatusBadge } from '../components/finance/Badges.jsx';
 import { useFinance } from '../context/FinanceContext.jsx';
 import { date, money, percent } from '../utils/format.js';
+import { completeLoanDuration, formatMonthlyInterest, monthlyInterest } from '../utils/loanMetrics.js';
 
 export default function Loans() {
   const { actions, loading, openPerson, selectLoans } = useFinance();
@@ -101,23 +101,23 @@ export default function Loans() {
       <div className="card overflow-hidden">
         {loading ? <Skeleton className="h-96" /> : data.length ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
-              <thead className="sticky top-0 z-10 bg-slate-50 text-left text-xs uppercase text-slate-500 dark:bg-slate-900">
-                <tr>{['Borrower', 'Principal', 'Rate', 'Loan Date', 'Duration', 'Interest', 'Remaining', 'Outstanding', 'Status', 'Actions'].map((h) => <th key={h} className="resize-x overflow-hidden px-4 py-3 font-bold">{h}</th>)}</tr>
+            <table className="min-w-full divide-y divide-slate-200 text-base dark:divide-slate-800">
+              <thead className="sticky top-0 z-10 bg-slate-50 text-left text-sm uppercase text-slate-500 dark:bg-slate-900">
+                <tr>{['Borrower', 'Principal', 'Rate', 'Loan Date', 'Duration', 'Monthly Interest', 'Interest', 'Remaining', 'Outstanding', 'Actions'].map((h) => <th key={h} className={`resize-x overflow-hidden px-4 py-3 font-bold ${h === 'Monthly Interest' ? 'text-center' : ''}`}>{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {data.map((loan) => (
                   <tr key={loan.id} ref={(node) => { rowRefs.current[loan.id] = node; }} className={`transition hover:bg-blue-50/60 dark:hover:bg-slate-900 ${highlightId === loan.id ? 'bg-emerald-50 dark:bg-emerald-950/40' : ''}`}>
-                    <td className="px-4 py-3"><button className="text-left font-bold text-brand-700 hover:underline" onClick={() => openPerson(loan.id)}>{loan.borrowerName}</button><p className="text-xs text-slate-500">{loan.phone || '-'}</p></td>
+                    <td className="px-4 py-3"><button className="text-left text-lg font-bold text-cyan-700 hover:underline dark:text-cyan-300" onClick={() => openPerson(loan.id)}>{loan.borrowerName}</button><p className="text-sm text-slate-500">{loan.phone || '-'}</p></td>
                     <td className="px-4 py-3">{money(loan.principal)}</td>
                     <td className="px-4 py-3">{percent(loan.interestRate)}</td>
                     <td className="px-4 py-3">{date(loan.loanDate)}</td>
-                    <td className="px-4 py-3">{loan.loanDuration}</td>
-                    <td className="px-4 py-3 font-semibold text-orange-700 dark:text-orange-300">{money(loan.outstandingInterest)}</td>
+                    <td className="px-4 py-3">{completeLoanDuration(loan)}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-amber-700 dark:text-amber-300">{formatMonthlyInterest(monthlyInterest(loan))}</td>
+                    <td className="px-4 py-3 font-semibold text-red-500 dark:text-red-300">{money(loan.outstandingInterest)}</td>
                     <td className="px-4 py-3">{money(loan.remainingPrincipal)}</td>
-                    <td className="px-4 py-3 font-bold text-slate-950 dark:text-white">{money(loan.currentOutstanding)}</td>
-                    <td className="px-4 py-3"><StatusBadge loan={loan} /></td>
-                    <td className="px-4 py-3"><button className="font-bold text-brand-600" onClick={() => openPerson(loan.id)}>Open</button></td>
+                    <td className="px-4 py-3 font-bold text-emerald-700 dark:text-emerald-300">{money(loan.currentOutstanding)}</td>
+                    <td className="px-4 py-3"><button className="font-bold text-brand-600 hover:underline" onClick={() => openPerson(loan.id)}>Open</button></td>
                   </tr>
                 ))}
               </tbody>

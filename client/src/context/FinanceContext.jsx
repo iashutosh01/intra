@@ -50,6 +50,7 @@ export function FinanceProvider({ children }) {
     addPayment: (payload) => mutate(() => endpoints.addPayment(payload)),
     updatePayment: (id, payload) => mutate(() => endpoints.updatePayment(id, payload)),
     deletePayment: (id) => mutate(() => endpoints.deletePayment(id)),
+    deleteHistory: (id) => mutate(() => endpoints.deleteHistory(id)),
     updateSettings: (payload) => mutate(() => endpoints.updateSettings(payload)),
     previewPayment: (payload) => endpoints.previewPayment(payload).then((response) => response.data)
   }), [mutate]);

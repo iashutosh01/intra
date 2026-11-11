@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { LoaderCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useFinance } from '../../context/FinanceContext.jsx';
 import { money } from '../../utils/format.js';
 
-export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCancel, loading = false }) {
+const EMPTY_PAYMENT = {};
+
+export default function PaymentForm({ loanId, initialValues = EMPTY_PAYMENT, onSubmit, onCancel, loading = false }) {
   const { actions } = useFinance();
   const [preview, setPreview] = useState(null);
-  const { register, handleSubmit, watch } = useForm({
+  const submissionLock = useRef(false);
+  const { register, handleSubmit, watch, reset, formState: { isSubmitting } } = useForm({
     defaultValues: {
       loanId,
       paymentDate: new Date().toISOString().slice(0, 10),
@@ -16,9 +20,30 @@ export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCa
       ...initialValues
     }
   });
+  useEffect(() => {
+    reset({
+      loanId,
+      paymentDate: new Date().toISOString().slice(0, 10),
+      amount: '',
+      paymentType: 'mixed',
+      notes: '',
+      ...initialValues
+    });
+  }, [initialValues, loanId, reset]);
   const amount = watch('amount');
   const paymentDate = watch('paymentDate');
   const paymentType = watch('paymentType');
+  const saving = loading || isSubmitting;
+
+  const submitOnce = async (values) => {
+    if (submissionLock.current) return;
+    submissionLock.current = true;
+    try {
+      await onSubmit(values);
+    } finally {
+      submissionLock.current = false;
+    }
+  };
 
   useEffect(() => {
     if (!loanId || !amount || Number(amount) <= 0) {
@@ -36,7 +61,7 @@ export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCa
   }, [actions, loanId, amount, paymentDate, paymentType]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+    <form onSubmit={handleSubmit(submitOnce)} className="space-y-3">
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_2fr_auto]">
         <input type="hidden" {...register('loanId')} />
         <input className="input" type="date" aria-label="Payment date" {...register('paymentDate', { required: true })} />
@@ -49,7 +74,9 @@ export default function PaymentForm({ loanId, initialValues = {}, onSubmit, onCa
         <input className="input" placeholder="Notes" aria-label="Payment notes" {...register('notes')} />
         <div className="flex gap-2">
           {onCancel ? <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button> : null}
-          <button className="btn-primary" disabled={loading}>{loading ? 'Saving...' : 'Save'}</button>
+          <button className="btn-primary" disabled={saving} aria-busy={saving}>
+            {saving ? <><LoaderCircle size={16} className="animate-spin" />Saving...</> : 'Save'}
+          </button>
         </div>
       </div>
       {preview ? (

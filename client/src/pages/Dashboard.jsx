@@ -6,25 +6,28 @@ import Skeleton from '../components/common/Skeleton.jsx';
 import StatCard from '../components/common/StatCard.jsx';
 import { useFinance } from '../context/FinanceContext.jsx';
 import { date, money } from '../utils/format.js';
+import { formatMonthlyInterest, monthlyInterest } from '../utils/loanMetrics.js';
 
 export default function Dashboard() {
-  const { dashboard: data, loading, openPerson } = useFinance();
+  const { dashboard: data, loans, loading, openPerson } = useFinance();
 
   if (loading) {
     return <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-32" />)}</div>;
   }
 
   const monthly = data?.charts?.monthly || [];
+  const monthlyInterestEarning = loans.filter((loan) => loan.status === 'active').reduce((total, loan) => total + monthlyInterest(loan), 0);
 
   return (
     <>
       <PageHeader title="Dashboard" description="Live portfolio numbers recalculated from raw loan and payment records." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Total Principal Given" value={data.totalPrincipalGiven} formatter={money} icon={Landmark} />
+        <StatCard label="Outstanding Interest" value={data.currentOutstandingInterest} formatter={money} icon={Activity} />
+        <StatCard label="Monthly Interest Earning" description="Estimated interest per month" value={monthlyInterestEarning} formatter={formatMonthlyInterest} icon={TrendingUp} accent="green" />
+        <StatCard label="Current Outstanding" value={data.currentOutstandingAmount} formatter={money} icon={Banknote} />
         <StatCard label="Principal Remaining" value={data.totalPrincipalRemaining} formatter={money} icon={Wallet} />
         <StatCard label="Interest Earned" value={data.totalInterestEarned} formatter={money} icon={CircleDollarSign} accent="green" />
-        <StatCard label="Outstanding Interest" value={data.currentOutstandingInterest} formatter={money} icon={Activity} />
-        <StatCard label="Current Outstanding" value={data.currentOutstandingAmount} formatter={money} icon={Banknote} />
         <StatCard label="Total Received" value={data.totalReceived} formatter={money} icon={CircleDollarSign} accent="green" />
         <StatCard label="Active Loans" value={data.activeLoans} icon={Wallet} formatter={(v) => Math.round(v)} />
         <StatCard label="Total Borrowers" value={data.totalBorrowers} icon={Users} formatter={(v) => Math.round(v)} />

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useFinance } from '../../context/FinanceContext.jsx';
 import { date, money, percent } from '../../utils/format.js';
+import { completeLoanDuration, formatMonthlyInterest, monthlyInterest } from '../../utils/loanMetrics.js';
 import ConfirmDialog from '../common/ConfirmDialog.jsx';
 import EmptyState from '../common/EmptyState.jsx';
 import LoanForm from '../loans/LoanForm.jsx';
@@ -40,6 +41,10 @@ export default function PersonDetailModal({ loanId, open, onClose }) {
     setEditingPayment(null);
     toast.success(editingPayment ? 'Payment updated and recalculated' : 'Payment recorded and recalculated');
   };
+  const removeHistoryEntries = async (ids) => {
+    for (const id of ids) await actions.deleteHistory(id);
+    toast.success(`${ids.length} history ${ids.length === 1 ? 'entry' : 'entries'} deleted`);
+  };
   const remove = async () => {
     if (confirm?.type === 'payment') {
       await actions.deletePayment(confirm.id);
@@ -55,18 +60,19 @@ export default function PersonDetailModal({ loanId, open, onClose }) {
   const summaryItems = loan ? [
     ['Principal', money(loan.principal)],
     ['Interest Rate', percent(loan.interestRate)],
+    ['Loan Date', date(loan.loanDate)],
+    ['Monthly Interest', formatMonthlyInterest(monthlyInterest(loan))],
     ['Principal Paid', money(loan.principalPaid)],
     ['Interest Paid', money(loan.interestPaid)],
     ['Outstanding Interest', money(loan.outstandingInterest)],
     ['Outstanding Principal', money(loan.remainingPrincipal)],
     ['Current Outstanding', money(loan.currentOutstanding)],
     ['Total Interest Generated', money(loan.totalInterestGenerated)],
-    ['Loan Date', date(loan.loanDate)],
     ['Interest Start Date', date(loan.interestStartDate)],
     ['Last Payment Date', date(loan.lastPaymentDate)],
     ['Next Interest Due', date(loan.nextInterestDue)],
-    ['Loan Duration', loan.loanDuration],
-    ['Interest Duration', loan.interestDuration],
+    ['Loan Duration', completeLoanDuration(loan)],
+    ['Interest Duration', loan.interestDuration || '0 Days'],
     ['Payment Count', loan.paymentCount],
     ['Days Since Last Payment', loan.daysSinceLastPayment ?? '-']
   ] : [];
@@ -82,8 +88,8 @@ export default function PersonDetailModal({ loanId, open, onClose }) {
         {editingLoan ? <LoanForm initialValues={loan} onSubmit={saveLoan} onCancel={() => setEditingLoan(false)} /> : null}
         <section><h3 className="mb-3 text-lg font-bold">Financial & Loan Summary</h3><SummaryCards items={summaryItems} /></section>
         <section className="rounded-lg border border-slate-200 p-4 dark:border-slate-800"><h3 className="font-bold">Remarks</h3><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{loan.remarks || 'No remarks'}</p></section>
-        <section className="card p-4"><h3 className="mb-4 text-lg font-bold">{editingPayment ? 'Edit Payment' : 'Add Payment'}</h3><PaymentForm loanId={loan.id} initialValues={editingPayment || {}} onSubmit={savePayment} onCancel={editingPayment ? () => setEditingPayment(null) : undefined} /></section>
-        <div className="grid gap-6 xl:grid-cols-2"><section><h3 className="mb-3 text-lg font-bold">Payment Timeline</h3><PaymentTimeline items={loan.paymentTimeline} onEdit={setEditingPayment} onDelete={(payment) => setConfirm({ type: 'payment', id: payment.id })} /></section><section><h3 className="mb-3 text-lg font-bold">History Timeline</h3><HistoryTimeline items={loan.historyTimeline} /></section></div>
+        <section className="card p-4"><h3 className="mb-4 text-lg font-bold">{editingPayment ? 'Edit Payment' : 'Add Payment'}</h3><PaymentForm loanId={loan.id} initialValues={editingPayment || undefined} onSubmit={savePayment} onCancel={editingPayment ? () => setEditingPayment(null) : undefined} /></section>
+        <div className="grid gap-6 xl:grid-cols-2"><section><h3 className="mb-3 text-lg font-bold">Payment Timeline</h3><PaymentTimeline items={loan.paymentTimeline} onEdit={setEditingPayment} onDelete={(payment) => setConfirm({ type: 'payment', id: payment.id })} /></section><section><h3 className="mb-3 text-lg font-bold">History Timeline</h3><HistoryTimeline items={loan.historyTimeline} onDelete={removeHistoryEntries} /></section></div>
       </div>}
     </section>
     <ConfirmDialog open={!!confirm} title={confirm?.type === 'loan' ? 'Delete loan?' : 'Delete payment?'} message="This will write a history record and recalculate dependent values." onClose={() => setConfirm(null)} onConfirm={remove} />
